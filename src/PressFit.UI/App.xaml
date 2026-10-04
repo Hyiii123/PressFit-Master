@@ -1,0 +1,21 @@
+<Application x:Class=""PressFit.UI.App""
+             xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
+             xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml""
+             Startup=""Application_Startup"">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- 工业暗色/深灰高端科技色彩主题定义 -->
+            <SolidColorBrush x:Key=""BgDark"" Color=""#121820"" />
+            <SolidColorBrush x:Key=""BgCard"" Color=""#1A222D"" />
+            <SolidColorBrush x:Key=""BgCardLight"" Color=""#232D3B"" />
+            <SolidColorBrush x:Key=""BorderColor"" Color=""#2A3647"" />
+            <SolidColorBrush x:Key=""TextPrimary"" Color=""#E2E8F0"" />
+            <SolidColorBrush x:Key=""TextSecondary"" Color=""#94A3B8"" />
+            <SolidColorBrush x:Key=""AccentCyan"" Color=""#00D2D3"" />
+            <SolidColorBrush x:Key=""AccentBlue"" Color=""#0984E3"" />
+            <SolidColorBrush x:Key=""StatusOk"" Color=""#00B894"" />
+            <SolidColorBrush x:Key=""StatusNg"" Color=""#D63031"" />
+            <SolidColorBrush x:Key=""StatusWarn"" Color=""#FDCB6E"" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
