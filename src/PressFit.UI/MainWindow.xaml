@@ -81,8 +81,16 @@
                     <StackPanel Margin="15">
                         <TextBlock Text="📋 工艺配方选择 (Recipe)" FontSize="15" FontWeight="Bold" Foreground="White" Margin="0,0,0,12" />
                         
-                        <ComboBox ItemsSource="{Binding Recipes}" SelectedItem="{Binding SelectedRecipe}" DisplayMemberPath="RecipeCode"
-                                  Height="34" Background="#243040" Foreground="White" BorderBrush="#3B4B60" Margin="0,0,0,10" />
+                        <ComboBox ItemsSource="{Binding Recipes}" SelectedItem="{Binding SelectedRecipe}" Height="36" Margin="0,0,0,12">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding RecipeCode}" FontWeight="Bold" Foreground="#00D2D3" Margin="0,0,8,0" />
+                                        <TextBlock Text="{Binding ProductName, StringFormat='({0})'}" Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                         
                         <TextBlock Text="产品型号:" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,4" />
                         <TextBlock Text="{Binding SelectedRecipe.ProductName}" Foreground="{StaticResource AccentCyan}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,12" />
@@ -310,3 +318,4 @@
         </Expander>
     </Grid>
 </Window>
+
