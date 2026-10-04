@@ -37,3 +37,9 @@ ehthumbs.db
 Desktop.ini
 .BIN/
 .DS_Store
+
+
+## External Tools & Archives
+Tools/
+*.zip
+*.exe
