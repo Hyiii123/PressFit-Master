@@ -13,7 +13,7 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
     private NetworkStream? _stream;
     private ushort _transactionId;
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private string _currentIp = ""127.0.0.1"";
+    private string _currentIp = "127.0.0.1";
     private int _currentPort = 5020;
 
     public bool IsConnected => _tcpClient != null && _tcpClient.Connected;
@@ -108,7 +108,7 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
             if ((funcCode & 0x80) != 0)
             {
                 byte exceptionCode = pdu[1];
-                throw new InvalidOperationException($""Modbus 异常响应: 功能码 0x{funcCode:X2}, 错误码 0x{exceptionCode:X2}"");
+                throw new InvalidOperationException($"Modbus 异常响应: 功能码 0x{funcCode:X2}, 错误码 0x{exceptionCode:X2}");
             }
 
             byte byteCount = pdu[1];
@@ -293,7 +293,7 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
     {
         if (_tcpClient == null || !_tcpClient.Connected || _stream == null)
         {
-            throw new InvalidOperationException(""Modbus 通信已断开，请检查连接状态"");
+            throw new InvalidOperationException("Modbus 通信已断开，请检查连接状态");
         }
     }
 
@@ -305,7 +305,7 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
             int read = await _stream!.ReadAsync(buffer, offset + totalRead, count - totalRead, ct);
             if (read == 0)
             {
-                throw new IOException(""Socket 远端已关闭连接"");
+                throw new IOException("Socket 远端已关闭连接");
             }
             totalRead += read;
         }

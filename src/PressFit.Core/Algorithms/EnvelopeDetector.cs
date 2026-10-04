@@ -23,8 +23,8 @@ public class EnvelopeDetector
     /// <summary>
     /// 对压装全轨迹曲线执行包络线公差带分析
     /// </summary>
-    /// <param name=""points"">采集到的实时时序点序列</param>
-    /// <param name=""recipe"">当前执行的产品工艺配方</param>
+    /// <param name="points">采集到的实时时序点序列</param>
+    /// <param name="recipe">当前执行的产品工艺配方</param>
     public static EnvelopeEvaluationResult Evaluate(IReadOnlyList<PressPoint> points, PressRecipe recipe)
     {
         if (points == null || points.Count == 0)
@@ -35,7 +35,7 @@ public class EnvelopeDetector
                 0,
                 0,
                 null,
-                ""曲线数据为空，压装采集异常""
+                "曲线数据为空，压装采集异常"
             );
         }
 
@@ -62,7 +62,7 @@ public class EnvelopeDetector
                 peakForce,
                 finalDisplacement,
                 points[^1],
-                $终点位移未达标: {finalDisplacement:F2} mm (要求 >= {minTargetDisp:F2} mm)
+                $"终点位移未达标: {finalDisplacement:F2} mm (要求 >= {minTargetDisp:F2} mm)"
             );
         }
 
@@ -74,7 +74,7 @@ public class EnvelopeDetector
                 peakForce,
                 finalDisplacement,
                 points[^1],
-                $终点位移超程: {finalDisplacement:F2} mm (要求 <= {maxTargetDisp:F2} mm)
+                $"终点位移超程: {finalDisplacement:F2} mm (要求 <= {maxTargetDisp:F2} mm)"
             );
         }
 
@@ -87,7 +87,7 @@ public class EnvelopeDetector
                 peakForce,
                 finalDisplacement,
                 points.FirstOrDefault(p => p.Force > recipe.MaxForceLimit),
-                $最大压力超限过盈卡滞: {peakForce:F2} kN (上限 {recipe.MaxForceLimit:F2} kN)
+                $"最大压力超限过盈卡滞: {peakForce:F2} kN (上限 {recipe.MaxForceLimit:F2} kN)"
             );
         }
 
@@ -99,7 +99,7 @@ public class EnvelopeDetector
                 peakForce,
                 finalDisplacement,
                 points[^1],
-                $最大压力过低虚压配合: {peakForce:F2} kN (下限 {recipe.MinForceLimit:F2} kN)
+                $"最大压力过低虚压配合: {peakForce:F2} kN (下限 {recipe.MinForceLimit:F2} kN)"
             );
         }
 
@@ -123,7 +123,7 @@ public class EnvelopeDetector
                     peakForce,
                     finalDisplacement,
                     p,
-                    $轨迹向上穿透公差带: 位移 {p.Displacement:F2}mm 时压力 {p.Force:F2}kN (上限 {upperLimit:F2}kN)
+                    $"轨迹向上穿透公差带: 位移 {p.Displacement:F2}mm 时压力 {p.Force:F2}kN (上限 {upperLimit:F2}kN)"
                 );
             }
 
@@ -135,7 +135,7 @@ public class EnvelopeDetector
                     peakForce,
                     finalDisplacement,
                     p,
-                    $轨迹向下跌出公差带: 位移 {p.Displacement:F2}mm 时压力 {p.Force:F2}kN (下限 {lowerLimit:F2}kN)
+                    $"轨迹向下跌出公差带: 位移 {p.Displacement:F2}mm 时压力 {p.Force:F2}kN (下限 {lowerLimit:F2}kN)"
                 );
             }
         }
@@ -146,7 +146,7 @@ public class EnvelopeDetector
             peakForce,
             finalDisplacement,
             null,
-            ""压装工艺合格 (OK)""
+            "压装工艺合格 (OK)"
         );
     }
 

@@ -18,7 +18,7 @@ public class PressFitRepository : IPressFitRepository
     public async Task<long> SaveProductionRecordAsync(PressResultRecord record)
     {
         using var conn = new SqliteConnection(DatabaseInitializer.ConnectionString);
-        string sql = @""
+        string sql = @"
             INSERT INTO production_records (
                 WorkpieceBarcode, RecipeCode, Quality, PeakForce, FinalDisplacement, 
                 CycleDurationSec, FailureReason, CurvePointsJson, CreatedAt
@@ -27,33 +27,33 @@ public class PressFitRepository : IPressFitRepository
                 @CycleDurationSec, @FailureReason, @CurvePointsJson, @CreatedAt
             );
             SELECT last_insert_rowid();
-        "";
+        ";
         return await conn.ExecuteScalarAsync<long>(sql, record);
     }
 
     public async Task<IReadOnlyList<PressResultRecord>> QueryRecordsAsync(DateTime startTime, DateTime endTime, string? barcode = null, int limit = 100)
     {
         using var conn = new SqliteConnection(DatabaseInitializer.ConnectionString);
-        string sql = @""
+        string sql = @"
             SELECT * FROM production_records 
             WHERE CreatedAt >= @StartTime AND CreatedAt <= @EndTime
-        "";
+        ";
 
         if (!string.IsNullOrWhiteSpace(barcode))
         {
-            sql += "" AND WorkpieceBarcode LIKE '%' || @Barcode || '%'"";
+            sql += " AND WorkpieceBarcode LIKE '%' || @Barcode || '%'";
         }
 
-        sql += "" ORDER BY Id DESC LIMIT @Limit;"";
+        sql += " ORDER BY Id DESC LIMIT @Limit;";
 
-        var result = await conn.QueryAsync<PressResultRecord>(sql, new { StartTime = startTime.ToString(""yyyy-MM-dd HH:mm:ss""), EndTime = endTime.ToString(""yyyy-MM-dd HH:mm:ss""), Barcode = barcode, Limit = limit });
+        var result = await conn.QueryAsync<PressResultRecord>(sql, new { StartTime = startTime.ToString("yyyy-MM-dd HH:mm:ss"), EndTime = endTime.ToString("yyyy-MM-dd HH:mm:ss"), Barcode = barcode, Limit = limit });
         return result.ToList();
     }
 
     public async Task<IReadOnlyList<PressRecipe>> GetAllRecipesAsync()
     {
         using var conn = new SqliteConnection(DatabaseInitializer.ConnectionString);
-        string sql = ""SELECT * FROM recipes ORDER BY Id ASC;"";
+        string sql = "SELECT * FROM recipes ORDER BY Id ASC;";
         var result = await conn.QueryAsync<PressRecipe>(sql);
         return result.ToList();
     }
@@ -61,7 +61,7 @@ public class PressFitRepository : IPressFitRepository
     public async Task<PressRecipe?> GetRecipeByCodeAsync(string recipeCode)
     {
         using var conn = new SqliteConnection(DatabaseInitializer.ConnectionString);
-        string sql = ""SELECT * FROM recipes WHERE RecipeCode = @RecipeCode LIMIT 1;"";
+        string sql = "SELECT * FROM recipes WHERE RecipeCode = @RecipeCode LIMIT 1;";
         return await conn.QueryFirstOrDefaultAsync<PressRecipe>(sql, new { RecipeCode = recipeCode });
     }
 
@@ -72,7 +72,7 @@ public class PressFitRepository : IPressFitRepository
 
         if (recipe.Id == 0)
         {
-            string insertSql = @""
+            string insertSql = @"
                 INSERT INTO recipes (
                     RecipeCode, ProductName, TargetDisplacement, DisplacementTolerance, 
                     MaxForceLimit, MinForceLimit, ApproachSpeed, PressSpeed, 
@@ -83,12 +83,12 @@ public class PressFitRepository : IPressFitRepository
                     @HoldingTimeSec, @EnvelopeMarginPercentage, @UpdatedAt
                 );
                 SELECT last_insert_rowid();
-            "";
+            ";
             return await conn.ExecuteScalarAsync<int>(insertSql, recipe);
         }
         else
         {
-            string updateSql = @""
+            string updateSql = @"
                 UPDATE recipes SET 
                     RecipeCode = @RecipeCode,
                     ProductName = @ProductName,
@@ -102,7 +102,7 @@ public class PressFitRepository : IPressFitRepository
                     EnvelopeMarginPercentage = @EnvelopeMarginPercentage,
                     UpdatedAt = @UpdatedAt
                 WHERE Id = @Id;
-            "";
+            ";
             await conn.ExecuteAsync(updateSql, recipe);
             return recipe.Id;
         }
@@ -111,6 +111,6 @@ public class PressFitRepository : IPressFitRepository
     public async Task DeleteRecipeAsync(int id)
     {
         using var conn = new SqliteConnection(DatabaseInitializer.ConnectionString);
-        await conn.ExecuteAsync(""DELETE FROM recipes WHERE Id = @Id;"", new { Id = id });
+        await conn.ExecuteAsync("DELETE FROM recipes WHERE Id = @Id;", new { Id = id });
     }
 }

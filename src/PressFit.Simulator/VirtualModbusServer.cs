@@ -95,12 +95,12 @@ public class VirtualModbusServer : IVirtualSlaveService, IDisposable
     {
         switch (faultType)
         {
-            case ""Disconnect"": Faults.SimulateNetworkDisconnect = enabled; break;
-            case ""Timeout"": Faults.SimulatePacketTimeout = enabled; break;
-            case ""ForceSpike"": Faults.SimulateForceSpikeNG = enabled; break;
-            case ""ForceLow"": Faults.SimulateForceLowNG = enabled; break;
-            case ""DispShort"": Faults.SimulateDisplacementShortNG = enabled; break;
-            case ""ServoAlarm"":
+            case "Disconnect": Faults.SimulateNetworkDisconnect = enabled; break;
+            case "Timeout": Faults.SimulatePacketTimeout = enabled; break;
+            case "ForceSpike": Faults.SimulateForceSpikeNG = enabled; break;
+            case "ForceLow": Faults.SimulateForceLowNG = enabled; break;
+            case "DispShort": Faults.SimulateDisplacementShortNG = enabled; break;
+            case "ServoAlarm":
                 Faults.SimulateServoAlarm = enabled;
                 lock (_lock)
                 {

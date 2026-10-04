@@ -23,14 +23,14 @@ public partial class MainViewModel : ObservableObject
     private readonly ConnectionWatchdog _watchdog;
 
     // 通信连接属性
-    [ObservableProperty] private string _serverIp = ""127.0.0.1"";
+    [ObservableProperty] private string _serverIp = "127.0.0.1";
     [ObservableProperty] private int _serverPort = 5020;
     [ObservableProperty] private bool _isConnected = false;
-    [ObservableProperty] private string _connectionStatusText = ""未连接 (离线)"";
+    [ObservableProperty] private string _connectionStatusText = "未连接 (离线)";
 
     // 设备与时序状态
-    [ObservableProperty] private string _machineStateText = ""待机中 (Idle)"";
-    [ObservableProperty] private string _pressPhaseText = ""原位就绪"";
+    [ObservableProperty] private string _machineStateText = "待机中 (Idle)";
+    [ObservableProperty] private string _pressPhaseText = "原位就绪";
     [ObservableProperty] private double _currentDisplacement = 0.0;
     [ObservableProperty] private double _currentForce = 0.0;
     [ObservableProperty] private double _peakForce = 0.0;
@@ -39,10 +39,10 @@ public partial class MainViewModel : ObservableObject
     // 工艺配方与工件
     [ObservableProperty] private ObservableCollection<PressRecipe> _recipes = new();
     [ObservableProperty] private PressRecipe? _selectedRecipe;
-    [ObservableProperty] private string _workpieceBarcode = ""SN-MOTOR-20261004-001"";
+    [ObservableProperty] private string _workpieceBarcode = "SN-MOTOR-20261004-001";
 
     // 判定结果与统计 KPI
-    [ObservableProperty] private string _qualityResultText = ""WAITING"";
+    [ObservableProperty] private string _qualityResultText = "WAITING";
     [ObservableProperty] private bool? _isQualityOk = null;
     [ObservableProperty] private int _totalCount = 0;
     [ObservableProperty] private int _okCount = 0;
@@ -102,18 +102,18 @@ public partial class MainViewModel : ObservableObject
             IsConnected = status == ConnectionStatus.Connected;
             ConnectionStatusText = status switch
             {
-                ConnectionStatus.Connected => ""通信正常 (在线)"",
-                ConnectionStatus.Connecting => ""握手重连中..."",
-                ConnectionStatus.Degraded => ""通信降级 (重试中)"",
-                _ => ""未连接 (离线)""
+                ConnectionStatus.Connected => "通信正常 (在线)",
+                ConnectionStatus.Connecting => "握手重连中...",
+                ConnectionStatus.Degraded => "通信降级 (重试中)",
+                _ => "未连接 (离线)"
             };
         });
     }
 
     [RelayCommand]
-    private async Task ConnectAsync()
+    private void Connect()
     {
-        AddLog($""手动触发连接 -> {ServerIp}:{ServerPort}"");
+        AddLog($"手动触发连接 -> {ServerIp}:{ServerPort}");
         _watchdog.Start(ServerIp, ServerPort);
     }
 
@@ -123,8 +123,8 @@ public partial class MainViewModel : ObservableObject
         _watchdog.Stop();
         await _modbusClient.DisconnectAsync();
         IsConnected = false;
-        ConnectionStatusText = ""已手动断开"";
-        AddLog(""已断开 Modbus 连接"");
+        ConnectionStatusText = "已手动断开";
+        AddLog("已断开 Modbus 连接");
     }
 
     [RelayCommand]
@@ -132,22 +132,22 @@ public partial class MainViewModel : ObservableObject
     {
         if (!IsConnected)
         {
-            AddLog(""[错误] 未建立通信连接，无法启动压装"");
+            AddLog("[错误] 未建立通信连接，无法启动压装");
             return;
         }
 
         if (SelectedRecipe == null)
         {
-            AddLog(""[错误] 请先选择工艺配方"");
+            AddLog("[错误] 请先选择工艺配方");
             return;
         }
 
         CurrentCyclePoints.Clear();
         OnCycleResetRequested?.Invoke();
-        QualityResultText = ""PRESSING..."";
+        QualityResultText = "PRESSING...";
         IsQualityOk = null;
 
-        AddLog($""下发配方 [{SelectedRecipe.RecipeCode}] 并触发压装，工件条码: {WorkpieceBarcode}"");
+        AddLog($"下发配方 [{SelectedRecipe.RecipeCode}] 并触发压装，工件条码: {WorkpieceBarcode}");
 
         // 下发启动线圈
         await _modbusClient.WriteSingleCoilAsync(1, ModbusAddressMap.COIL_CMD_START, true);
@@ -156,7 +156,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task EmergencyStopAsync()
     {
-        AddLog(""[警告] 触发紧急停机 (E-STOP) 指令！"");
+        AddLog("[警告] 触发紧急停机 (E-STOP) 指令！");
         if (IsConnected)
         {
             await _modbusClient.WriteSingleCoilAsync(1, ModbusAddressMap.COIL_CMD_STOP, true);
@@ -171,13 +171,13 @@ public partial class MainViewModel : ObservableObject
         {
             _simulator.StopAsync();
             IsSimulatorRunning = false;
-            AddLog(""内置虚拟仿真器已关闭"");
+            AddLog("内置虚拟仿真器已关闭");
         }
         else
         {
             _simulator.StartAsync(ServerPort);
             IsSimulatorRunning = true;
-            AddLog($""内置虚拟仿真器已启动，监听端口: {ServerPort}"");
+            AddLog($"内置虚拟仿真器已启动，监听端口: {ServerPort}");
             // 自动连接
             ConnectCommand.Execute(null);
         }
@@ -186,13 +186,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ApplyFaults()
     {
-        _simulator.InjectFault(""Disconnect"", FaultDisconnect);
-        _simulator.InjectFault(""Timeout"", FaultTimeout);
-        _simulator.InjectFault(""ForceSpike"", FaultForceSpike);
-        _simulator.InjectFault(""ForceLow"", FaultForceLow);
-        _simulator.InjectFault(""DispShort"", FaultDispShort);
-        _simulator.InjectFault(""ServoAlarm"", FaultServoAlarm);
-        AddLog(""[故障注入] 故障开关配置已同步至仿真引擎"");
+        _simulator.InjectFault("Disconnect", FaultDisconnect);
+        _simulator.InjectFault("Timeout", FaultTimeout);
+        _simulator.InjectFault("ForceSpike", FaultForceSpike);
+        _simulator.InjectFault("ForceLow", FaultForceLow);
+        _simulator.InjectFault("DispShort", FaultDispShort);
+        _simulator.InjectFault("ServoAlarm", FaultServoAlarm);
+        AddLog("[故障注入] 故障开关配置已同步至仿真引擎");
     }
 
     private void StartAcquisitionLoop()
@@ -285,13 +285,13 @@ public partial class MainViewModel : ObservableObject
         else NgCount++;
         YieldRate = TotalCount > 0 ? (double)OkCount / TotalCount * 100.0 : 100.0;
 
-        QualityResultText = eval.IsPass ? ""PASS (OK)"" : $""NG: {eval.Status}"";
+        QualityResultText = eval.IsPass ? "PASS (OK)" : $"NG: {eval.Status}";
         IsQualityOk = eval.IsPass;
 
-        AddLog($""[周期结束] 判定结果: {QualityResultText}, 峰值压力: {eval.PeakForce:F2}kN, 终点位移: {eval.FinalDisplacement:F2}mm"");
+        AddLog($"[周期结束] 判定结果: {QualityResultText}, 峰值压力: {eval.PeakForce:F2}kN, 终点位移: {eval.FinalDisplacement:F2}mm");
         if (!eval.IsPass)
         {
-            AddLog($""[NG详情] {eval.EvaluationMessage}"");
+            AddLog($"[NG详情] {eval.EvaluationMessage}");
         }
 
         // 异步落盘 SQLite (Dapper)
@@ -309,18 +309,18 @@ public partial class MainViewModel : ObservableObject
         };
 
         await _repository.SaveProductionRecordAsync(record);
-        AddLog($""[数据归档] 生产记录已持久化至 SQLite (ID: {record.Id})"");
+        AddLog($"[数据归档] 生产记录已持久化至 SQLite (ID: {record.Id})");
 
         // 自动递增条码流水号
-        WorkpieceBarcode = $""SN-MOTOR-20261004-{TotalCount + 1:D3}"";
+        WorkpieceBarcode = $"SN-MOTOR-20261004-{TotalCount + 1:D3}";
     }
 
     public void AddLog(string msg)
     {
         Application.Current?.Dispatcher.Invoke(() =>
         {
-            string timeStr = DateTime.Now.ToString(""HH:mm:ss.fff"");
-            LogMessages.Insert(0, $""[{timeStr}] {msg}"");
+            string timeStr = DateTime.Now.ToString("HH:mm:ss.fff");
+            LogMessages.Insert(0, $"[{timeStr}] {msg}");
             if (LogMessages.Count > 100) LogMessages.RemoveAt(LogMessages.Count - 1);
         });
     }
