@@ -1,0 +1,134 @@
+<Window x:Class="PressFit.UI.Views.RecipeManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="工艺配方管理与参数标定控制台" 
+        Height="620" Width="980"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgDark}"
+        Foreground="{StaticResource TextPrimary}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 顶部标题 -->
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="⚙️ 工艺配方与公差标定 (Recipe Calibration)" FontSize="18" FontWeight="Bold" Foreground="White" />
+                <Border Background="#243242" CornerRadius="4" Padding="8,3" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="工程师权限专享" FontSize="11" Foreground="{StaticResource AccentCyan}" />
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- 主体：左侧配方列表，右侧参数详情编辑 -->
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧列表 -->
+            <Border Grid.Column="0" Background="{StaticResource BgCard}" CornerRadius="8" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="0,0,12,0" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="已注册产品配方列表" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" Margin="4,0,0,8" />
+                    <DataGrid Grid.Row="1" x:Name="RecipeGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                              SelectionMode="Single" SelectionChanged="RecipeGrid_SelectionChanged"
+                              Background="Transparent" RowBackground="#16202C" AlternatingRowBackground="#1A2533"
+                              BorderThickness="0" Foreground="White" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#263445">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="编号" Binding="{Binding RecipeCode}" Width="100" />
+                            <DataGridTextColumn Header="产品名称" Binding="{Binding ProductName}" Width="*" />
+                            <DataGridTextColumn Header="目标压深" Binding="{Binding TargetDisplacement, StringFormat='{}{0:F1}mm'}" Width="75" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- 右侧参数表单 -->
+            <Border Grid.Column="1" Background="{StaticResource BgCard}" CornerRadius="8" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Padding="18">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="📝 配方工艺参数设置" FontSize="15" FontWeight="Bold" Foreground="{StaticResource AccentCyan}" Margin="0,0,0,15" />
+
+                        <UniformGrid Columns="2" Margin="0,0,0,10">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="配方编号 (Code):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtCode" Height="34" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="产品名称 (Name):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtName" Height="34" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <UniformGrid Columns="2" Margin="0,0,0,10">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="目标压入深度 (Target Disp mm):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtTargetDisp" Height="34" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="深度允许公差 (Tolerance ±mm):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtDispTol" Height="34" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <UniformGrid Columns="2" Margin="0,0,0,10">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="压力上限 (Max Force kN):" Foreground="{StaticResource StatusNg}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtMaxForce" Height="34" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="压力下限 (Min Force kN):" Foreground="{StaticResource StatusOk}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtMinForce" Height="34" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <UniformGrid Columns="2" Margin="0,0,0,10">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="快速接近速度 (mm/s):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtApproachSpeed" Height="34" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="恒速压入速度 (mm/s):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtPressSpeed" Height="34" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="保压持续时间 (Holding s):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtHoldingTime" Height="34" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="包络公差浮动比例 (%):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtEnvelopeMargin" Height="34" />
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- 底部操作按钮 -->
+        <Border Grid.Row="2" Background="{StaticResource BgCard}" CornerRadius="8" Padding="12">
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="➕ 新建配方" Click="NewRecipe_Click" Width="100" Height="36" Background="#2D3B4E" Foreground="White" BorderThickness="0" Margin="0,0,10,0" Cursor="Hand" />
+                    <Button Content="💾 保存配方" Click="SaveRecipe_Click" Width="110" Height="36" Background="{StaticResource StatusOk}" Foreground="White" FontWeight="Bold" BorderThickness="0" Margin="0,0,10,0" Cursor="Hand" />
+                    <Button Content="🗑️ 删除配方" Click="DeleteRecipe_Click" Width="100" Height="36" Background="{StaticResource StatusNg}" Foreground="White" BorderThickness="0" Cursor="Hand" />
+                </StackPanel>
+
+                <Button Content="⬇️ 一键将配方下发至设备 (Modbus 0x10)" Click="DownloadToPlc_Click"
+                        HorizontalAlignment="Right" Width="260" Height="36" 
+                        Background="{StaticResource AccentBlue}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

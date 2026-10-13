@@ -36,6 +36,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private double _peakForce = 0.0;
     [ObservableProperty] private double _cycleTimeMs = 0.0;
 
+    // 工业多级权限与审计
+    [ObservableProperty] private UserRole _currentUserRole = UserRole.Operator;
+    [ObservableProperty] private string _currentUserRoleText = "产线操作员 (Operator)";
+    [ObservableProperty] private bool _canEditRecipe = false;
+
     // 工艺配方与工件
     [ObservableProperty] private ObservableCollection<PressRecipe> _recipes = new();
     [ObservableProperty] private PressRecipe? _selectedRecipe;
@@ -87,12 +92,12 @@ public partial class MainViewModel : ObservableObject
         StartAcquisitionLoop();
     }
 
-    private async void LoadRecipesAsync()
+    public async void LoadRecipesAsync()
     {
         var list = await _repository.GetAllRecipesAsync();
         Recipes.Clear();
         foreach (var r in list) Recipes.Add(r);
-        SelectedRecipe = Recipes.FirstOrDefault();
+        SelectedRecipe = Recipes.FirstOrDefault(r => r.RecipeCode == SelectedRecipe?.RecipeCode) ?? Recipes.FirstOrDefault();
     }
 
     private void Watchdog_StatusChanged(ConnectionStatus status)
@@ -125,6 +130,48 @@ public partial class MainViewModel : ObservableObject
         IsConnected = false;
         ConnectionStatusText = "已手动断开";
         AddLog("已断开 Modbus 连接");
+    }
+
+    [RelayCommand]
+    private void SwitchRole()
+    {
+        var dialog = new Views.UserLoginDialog();
+        dialog.Owner = Application.Current?.MainWindow;
+        if (dialog.ShowDialog() == true)
+        {
+            CurrentUserRole = dialog.SelectedRole;
+            CurrentUserRoleText = dialog.SelectedRole switch
+            {
+                UserRole.Engineer => "工艺工程师 (Engineer)",
+                UserRole.Administrator => "系统管理员 (Administrator)",
+                _ => "产线操作员 (Operator)"
+            };
+            CanEditRecipe = CurrentUserRole != UserRole.Operator;
+            AddLog($"[权限审计] 系统操作身份已切换为: {CurrentUserRoleText}");
+        }
+    }
+
+    [RelayCommand]
+    private void OpenRecipeManager()
+    {
+        if (!CanEditRecipe)
+        {
+            MessageBox.Show("当前处于【产线操作员】身份，无权修改工艺配方与下发参数！\n请点击右上角【切换身份】输入工程师密码 (1234)。", "权限防呆提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var win = new Views.RecipeManagerWindow(_repository, _modbusClient);
+        win.Owner = Application.Current?.MainWindow;
+        win.OnRecipesChanged += () => LoadRecipesAsync();
+        win.ShowDialog();
+    }
+
+    [RelayCommand]
+    private void OpenHistoryQuery()
+    {
+        var win = new Views.HistoryQueryWindow(_repository);
+        win.Owner = Application.Current?.MainWindow;
+        win.ShowDialog();
     }
 
     [RelayCommand]
@@ -178,8 +225,7 @@ public partial class MainViewModel : ObservableObject
             _simulator.StartAsync(ServerPort);
             IsSimulatorRunning = true;
             AddLog($"内置虚拟仿真器已启动，监听端口: {ServerPort}");
-            // 自动连接
-            ConnectCommand.Execute(null);
+            Connect();
         }
     }
 

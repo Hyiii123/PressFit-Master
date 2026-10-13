@@ -6,22 +6,22 @@
         xmlns:vm="clr-namespace:PressFit.UI.ViewModels"
         mc:Ignorable="d"
         Title="PressFit-Master 智能产线多工位精密伺服压装监控系统 v1.0" 
-        Height="850" Width="1360"
-        MinHeight="750" MinWidth="1150"
+        Height="870" Width="1420"
+        MinHeight="750" MinWidth="1200"
         Background="{StaticResource BgDark}"
         Foreground="{StaticResource TextPrimary}"
         WindowStartupLocation="CenterScreen">
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="60" />  <!-- 顶部状态栏 -->
+            <RowDefinition Height="64" />  <!-- 顶部状态栏 -->
             <RowDefinition Height="*" />   <!-- 主体操作与监控区 -->
             <RowDefinition Height="Auto" /> <!-- 底部仿真与故障注入抽屉 -->
         </Grid.RowDefinitions>
 
         <!-- 1. 顶部全局状态栏 -->
         <Border Grid.Row="0" Background="#161E28" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1">
-            <Grid Margin="20,0">
+            <Grid Margin="18,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -32,7 +32,7 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="⚡" FontSize="22" Foreground="{StaticResource AccentCyan}" VerticalAlignment="Center" Margin="0,0,10,0" />
                     <TextBlock Text="PressFit-Master" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
-                    <Border Background="#243242" CornerRadius="4" Padding="6,2" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <Border Background="#243242" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
                         <TextBlock Text="精密伺服压装工位上位机" FontSize="12" Foreground="{StaticResource AccentCyan}" />
                     </Border>
                 </StackPanel>
@@ -55,14 +55,35 @@
                     </Border>
                 </StackPanel>
 
-                <!-- 右侧通信配置与断连控制 -->
+                <!-- 右侧功能导航与权限控制 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="建立连接" Command="{Binding ConnectCommand}" 
-                            Background="#0984E3" Foreground="White" FontWeight="SemiBold"
-                            Padding="12,6" Margin="0,0,8,0" BorderThickness="0" Cursor="Hand" />
-                    <Button Content="断开连接" Command="{Binding DisconnectCommand}" 
+                    <!-- 业务功能按钮 -->
+                    <Button Content="⚙️ 配方标定" Command="{Binding OpenRecipeManagerCommand}" 
+                            Background="#243346" Foreground="White" FontWeight="SemiBold"
+                            Padding="10,6" Margin="0,0,6,0" BorderThickness="0" Cursor="Hand" />
+
+                    <Button Content="📈 生产追溯" Command="{Binding OpenHistoryQueryCommand}" 
+                            Background="#243346" Foreground="White" FontWeight="SemiBold"
+                            Padding="10,6" Margin="0,0,14,0" BorderThickness="0" Cursor="Hand" />
+
+                    <!-- 用户权限身份卡片 -->
+                    <Border Background="#1E293B" CornerRadius="4" Padding="8,4" Margin="0,0,6,0" VerticalAlignment="Center" BorderBrush="#3B4B60" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="👤 " FontSize="11" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding CurrentUserRoleText}" Foreground="{StaticResource AccentCyan}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <Button Content="切换权限" Command="{Binding SwitchRoleCommand}" 
+                            Background="{StaticResource AccentBlue}" Foreground="White" FontWeight="Bold"
+                            Padding="8,5" Margin="0,0,14,0" BorderThickness="0" Cursor="Hand" />
+
+                    <!-- 连接断开控制 -->
+                    <Button Content="连接" Command="{Binding ConnectCommand}" 
+                            Background="#00B894" Foreground="White" FontWeight="Bold"
+                            Padding="10,6" Margin="0,0,6,0" BorderThickness="0" Cursor="Hand" />
+                    <Button Content="断开" Command="{Binding DisconnectCommand}" 
                             Background="#2D3748" Foreground="{StaticResource TextSecondary}"
-                            Padding="12,6" BorderThickness="0" Cursor="Hand" />
+                            Padding="10,6" BorderThickness="0" Cursor="Hand" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -70,7 +91,7 @@
         <!-- 2. 主体区 (三栏布局: 配方参数 / 核心曲线监控 / 生产统计与日志) -->
         <Grid Grid.Row="1" Margin="15">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300" /> <!-- 左侧工艺与工件控制 -->
+                <ColumnDefinition Width="310" /> <!-- 左侧工艺与工件控制 -->
                 <ColumnDefinition Width="*" />   <!-- 中央曲线与大屏监控 -->
                 <ColumnDefinition Width="340" /> <!-- 右侧生产KPI与日志 -->
             </Grid.ColumnDefinitions>
@@ -79,7 +100,12 @@
             <Border Grid.Column="0" Background="{StaticResource BgCard}" CornerRadius="8" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="0,0,10,0">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="15">
-                        <TextBlock Text="📋 工艺配方选择 (Recipe)" FontSize="15" FontWeight="Bold" Foreground="White" Margin="0,0,0,12" />
+                        <Grid Margin="0,0,0,10">
+                            <TextBlock Text="📋 工艺配方 (Recipe)" FontSize="15" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
+                            <Button Content="⚙️ 管理" Command="{Binding OpenRecipeManagerCommand}"
+                                    HorizontalAlignment="Right" Background="Transparent" Foreground="{StaticResource AccentCyan}"
+                                    BorderThickness="0" Cursor="Hand" FontWeight="SemiBold" FontSize="12" />
+                        </Grid>
                         
                         <ComboBox ItemsSource="{Binding Recipes}" SelectedItem="{Binding SelectedRecipe}" Height="36" Margin="0,0,0,12">
                             <ComboBox.ItemTemplate>
@@ -235,7 +261,7 @@
                 <!-- 生产统计 KPI -->
                 <Border Grid.Row="0" Background="{StaticResource BgCard}" CornerRadius="8" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Margin="0,0,0,10" Padding="15">
                     <StackPanel>
-                        <TextBlock Text="📊 生产质量统揽 (Quality KPI)" FontSize="14" FontWeight="Bold" Foreground="White" Margin="0,0,0,12" />
+                        <TextBlock Text="📊 生产质量统揽 (Quality KPI)" FontSize="14" FontWeight="Bold" Foreground="White" Margin="0,0,12,12" />
                         <UniformGrid Columns="2">
                             <StackPanel Margin="0,0,0,8">
                                 <TextBlock Text="总计生产 (Total):" Foreground="{StaticResource TextSecondary}" FontSize="12" />
