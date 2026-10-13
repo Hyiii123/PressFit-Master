@@ -1,11 +1,12 @@
 using System.Net.Sockets;
 using PressFit.Core.Interfaces;
+using PressFit.Core.Models;
 
 namespace PressFit.Communication.Modbus;
 
 /// <summary>
 /// 纯原生异步高性能 Modbus TCP 主站通信客户端
-/// 具备完整的 MBAP 报文封装、双向流处理、超时控制与异常映射
+/// 具备完整的 MBAP 报文封装、双向流处理、超时控制与原始帧抓包监视
 /// </summary>
 public class ModbusTcpClientService : IModbusMasterService, IDisposable
 {
@@ -17,6 +18,7 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
     private int _currentPort = 5020;
 
     public bool IsConnected => _tcpClient != null && _tcpClient.Connected;
+    public event Action<RawFrameLog>? OnRawFrameLogged;
 
     public async Task<bool> ConnectAsync(string ip, int port, CancellationToken ct = default)
     {
@@ -94,6 +96,7 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
             request[10] = (byte)(count >> 8);
             request[11] = (byte)(count & 0xFF);
 
+            EmitLog(true, request, $"FC03 读保持寄存器 Addr:{startAddress} Count:{count}");
             await _stream!.WriteAsync(request, 0, request.Length, ct);
 
             // 接收响应 MBAP 头 (7B) + PDU (2B + count*2 B)
@@ -103,6 +106,11 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
             ushort length = (ushort)((header[4] << 8) | header[5]);
             byte[] pdu = new byte[length - 1]; // 排除 UnitID
             await ReadExactBytesAsync(pdu, 0, pdu.Length, ct);
+
+            byte[] fullResp = new byte[7 + pdu.Length];
+            Array.Copy(header, fullResp, 7);
+            Array.Copy(pdu, 0, fullResp, 7, pdu.Length);
+            EmitLog(false, fullResp, "FC03 响应数据帧");
 
             byte funcCode = pdu[0];
             if ((funcCode & 0x80) != 0)
@@ -149,10 +157,12 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
             request[10] = (byte)((ushort)value >> 8);
             request[11] = (byte)((ushort)value & 0xFF);
 
+            EmitLog(true, request, $"FC06 写单个寄存器 Addr:{address} Val:{value}");
             await _stream!.WriteAsync(request, 0, request.Length, ct);
 
             byte[] response = new byte[12];
             await ReadExactBytesAsync(response, 0, 12, ct);
+            EmitLog(false, response, "FC06 写寄存器回显");
         }
         finally
         {
@@ -193,10 +203,12 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
                 request[14 + i * 2] = (byte)((ushort)values[i] & 0xFF);
             }
 
+            EmitLog(true, request, $"FC10 批量下发寄存器 Addr:{startAddress} Count:{values.Length}");
             await _stream!.WriteAsync(request, 0, request.Length, ct);
 
             byte[] response = new byte[12];
             await ReadExactBytesAsync(response, 0, 12, ct);
+            EmitLog(false, response, "FC10 批量写响应");
         }
         finally
         {
@@ -227,10 +239,12 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
             request[10] = (byte)(value ? 0xFF : 0x00);
             request[11] = 0x00;
 
+            EmitLog(true, request, $"FC05 写线圈 Addr:{address} Val:{value}");
             await _stream!.WriteAsync(request, 0, request.Length, ct);
 
             byte[] response = new byte[12];
             await ReadExactBytesAsync(response, 0, 12, ct);
+            EmitLog(false, response, "FC05 写线圈回显");
         }
         finally
         {
@@ -261,6 +275,7 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
             request[10] = (byte)(count >> 8);
             request[11] = (byte)(count & 0xFF);
 
+            EmitLog(true, request, $"FC01 读线圈 Addr:{startAddress} Count:{count}");
             await _stream!.WriteAsync(request, 0, request.Length, ct);
 
             byte[] header = new byte[7];
@@ -269,6 +284,11 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
             ushort length = (ushort)((header[4] << 8) | header[5]);
             byte[] pdu = new byte[length - 1];
             await ReadExactBytesAsync(pdu, 0, pdu.Length, ct);
+
+            byte[] fullResp = new byte[7 + pdu.Length];
+            Array.Copy(header, fullResp, 7);
+            Array.Copy(pdu, 0, fullResp, 7, pdu.Length);
+            EmitLog(false, fullResp, "FC01 读线圈响应");
 
             byte byteCount = pdu[1];
             bool[] result = new bool[count];
@@ -287,6 +307,12 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
         {
             _lock.Release();
         }
+    }
+
+    private void EmitLog(bool isTx, byte[] buffer, string desc)
+    {
+        string hex = BitConverter.ToString(buffer).Replace("-", " ");
+        OnRawFrameLogged?.Invoke(new RawFrameLog(DateTime.Now, isTx, hex, desc));
     }
 
     private void EnsureConnected()

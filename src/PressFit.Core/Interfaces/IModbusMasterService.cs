@@ -8,6 +8,7 @@ namespace PressFit.Core.Interfaces;
 public interface IModbusMasterService
 {
     bool IsConnected { get; }
+    event Action<RawFrameLog>? OnRawFrameLogged;
     Task<bool> ConnectAsync(string ip, int port, CancellationToken ct = default);
     Task DisconnectAsync();
     Task<short[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort count, CancellationToken ct = default);

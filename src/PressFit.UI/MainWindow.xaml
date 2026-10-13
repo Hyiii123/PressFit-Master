@@ -6,8 +6,8 @@
         xmlns:vm="clr-namespace:PressFit.UI.ViewModels"
         mc:Ignorable="d"
         Title="PressFit-Master 智能产线多工位精密伺服压装监控系统 v1.0" 
-        Height="870" Width="1420"
-        MinHeight="750" MinWidth="1200"
+        Height="900" Width="1440"
+        MinHeight="780" MinWidth="1200"
         Background="{StaticResource BgDark}"
         Foreground="{StaticResource TextPrimary}"
         WindowStartupLocation="CenterScreen">
@@ -16,7 +16,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="64" />  <!-- 顶部状态栏 -->
             <RowDefinition Height="*" />   <!-- 主体操作与监控区 -->
-            <RowDefinition Height="Auto" /> <!-- 底部仿真与故障注入抽屉 -->
+            <RowDefinition Height="Auto" /> <!-- 底部仿真与报文监控抽屉 -->
         </Grid.RowDefinitions>
 
         <!-- 1. 顶部全局状态栏 -->
@@ -57,13 +57,17 @@
 
                 <!-- 右侧功能导航与权限控制 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- 业务功能按钮 -->
+                    <!-- 核心业务导航按钮 -->
                     <Button Content="⚙️ 配方标定" Command="{Binding OpenRecipeManagerCommand}" 
                             Background="#243346" Foreground="White" FontWeight="SemiBold"
                             Padding="10,6" Margin="0,0,6,0" BorderThickness="0" Cursor="Hand" />
 
                     <Button Content="📈 生产追溯" Command="{Binding OpenHistoryQueryCommand}" 
                             Background="#243346" Foreground="White" FontWeight="SemiBold"
+                            Padding="10,6" Margin="0,0,6,0" BorderThickness="0" Cursor="Hand" />
+
+                    <Button Content="📊 SPC 分析" Command="{Binding OpenSpcAnalysisCommand}" 
+                            Background="#243346" Foreground="{StaticResource AccentCyan}" FontWeight="Bold"
                             Padding="10,6" Margin="0,0,14,0" BorderThickness="0" Cursor="Hand" />
 
                     <!-- 用户权限身份卡片 -->
@@ -306,42 +310,65 @@
             </Grid>
         </Grid>
 
-        <!-- 3. 底部抽屉: 工业虚拟从机与故障注入控制台 (演示与面试核心利器) -->
+        <!-- 3. 底部抽屉: 仿真控制台与底层原始报文监视器 -->
         <Expander Grid.Row="2" Background="#111720" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,1,0,0"
-                  Header="🛠️ 高保真虚拟从机与故障注入控制台 (Virtual Slave &amp; Fault Injection)" 
+                  Header="🛠️ 高保真虚拟从机、故障注入与底层 Modbus 原始帧抓包监视器 (Raw Frame &amp; Faults)" 
                   Foreground="{StaticResource AccentCyan}" FontWeight="Bold" IsExpanded="True">
             <Border Background="#17202C" Padding="15,10">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="650" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- 仿真器主开关 -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,25,0">
-                        <Button Content="{Binding IsSimulatorRunning, Converter={x:Null}, FallbackValue='内置仿真从机 (运行中)'}" 
-                                Command="{Binding ToggleSimulatorCommand}"
-                                Background="#2D3748" Foreground="White" Padding="12,6" BorderThickness="0" Cursor="Hand" />
-                    </StackPanel>
+                    <!-- 左半部: 虚拟从站与故障注入 -->
+                    <Border Grid.Column="0" BorderBrush="#263445" BorderThickness="0,0,1,0" Margin="0,0,15,0" Padding="0,0,15,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                    <!-- 故障注入多选列表 -->
-                    <WrapPanel Grid.Column="1" VerticalAlignment="Center">
-                        <CheckBox Content="⚡ 模拟网络断开 (Drop)" IsChecked="{Binding FaultDisconnect}" Foreground="White" Margin="0,0,15,0" />
-                        <CheckBox Content="⏳ 模拟通信严重超时 (Timeout)" IsChecked="{Binding FaultTimeout}" Foreground="White" Margin="0,0,15,0" />
-                        <CheckBox Content="⚠️ 注入过盈卡滞超限 (Spike NG)" IsChecked="{Binding FaultForceSpike}" Foreground="#FF7675" Margin="0,0,15,0" />
-                        <CheckBox Content="⚠️ 注入配合过松压力低 (Low NG)" IsChecked="{Binding FaultForceLow}" Foreground="#FDCB6E" Margin="0,0,15,0" />
-                        <CheckBox Content="⚠️ 注入未到位提前停机 (Short NG)" IsChecked="{Binding FaultDispShort}" Foreground="#74B9FF" Margin="0,0,15,0" />
-                        <CheckBox Content="🚨 模拟伺服驱动器报警 (Alarm)" IsChecked="{Binding FaultServoAlarm}" Foreground="#D63031" Margin="0,0,15,0" />
-                    </WrapPanel>
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                                <Button Content="{Binding IsSimulatorRunning, Converter={x:Null}, FallbackValue='内置仿真从机 (运行中)'}" 
+                                        Command="{Binding ToggleSimulatorCommand}"
+                                        Background="#2D3748" Foreground="White" Padding="12,6" BorderThickness="0" Cursor="Hand" Margin="0,0,12,0" />
+                                <Button Content="同步故障注入配置" Command="{Binding ApplyFaultsCommand}"
+                                        Background="#0984E3" Foreground="White" FontWeight="Bold"
+                                        Padding="14,6" BorderThickness="0" Cursor="Hand" />
+                            </StackPanel>
 
-                    <!-- 确认应用按钮 -->
-                    <Button Grid.Column="2" Content="同步注入配置" Command="{Binding ApplyFaultsCommand}"
-                            Background="#0984E3" Foreground="White" FontWeight="Bold"
-                            Padding="14,6" BorderThickness="0" Cursor="Hand" />
+                            <WrapPanel Grid.Row="1">
+                                <CheckBox Content="⚡ 模拟断网 (Drop)" IsChecked="{Binding FaultDisconnect}" Foreground="White" Margin="0,0,12,6" />
+                                <CheckBox Content="⏳ 模拟响应超时 (Timeout)" IsChecked="{Binding FaultTimeout}" Foreground="White" Margin="0,0,12,6" />
+                                <CheckBox Content="⚠️ 注入过盈卡滞 (Spike NG)" IsChecked="{Binding FaultForceSpike}" Foreground="#FF7675" Margin="0,0,12,6" />
+                                <CheckBox Content="⚠️ 注入压力偏低 (Low NG)" IsChecked="{Binding FaultForceLow}" Foreground="#FDCB6E" Margin="0,0,12,6" />
+                                <CheckBox Content="⚠️ 注入未到位 (Short NG)" IsChecked="{Binding FaultDispShort}" Foreground="#74B9FF" Margin="0,0,12,6" />
+                                <CheckBox Content="🚨 模拟伺服报警 (Alarm)" IsChecked="{Binding FaultServoAlarm}" Foreground="#D63031" Margin="0,0,12,6" />
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- 右半部: 原始 16 进制通讯报文实时监视器 (工控现场抓包调试利器) -->
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="100" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="📡 Modbus TCP 原始报文帧流 (Raw Hex Traffic - TX / RX)" FontSize="12" FontWeight="Bold" Foreground="{StaticResource AccentCyan}" Margin="0,0,0,4" />
+                        <Border Grid.Row="1" Background="#0C121A" CornerRadius="4" BorderBrush="#1E2A38" BorderThickness="1">
+                            <ListBox ItemsSource="{Binding RawFrameLogs}" Background="Transparent" BorderThickness="0"
+                                     Foreground="#00D2D3" FontFamily="Consolas" FontSize="11">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Margin="2,1" TextWrapping="NoWrap" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+                    </Grid>
                 </Grid>
             </Border>
         </Expander>
     </Grid>
 </Window>
-

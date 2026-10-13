@@ -63,8 +63,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _faultDispShort = false;
     [ObservableProperty] private bool _faultServoAlarm = false;
 
-    // 运行日志流水
+    // 运行日志与底层报文抓包流水
     public ObservableCollection<string> LogMessages { get; } = new();
+    public ObservableCollection<string> RawFrameLogs { get; } = new();
 
     // 采集缓存点
     public List<PressPoint> CurrentCyclePoints { get; } = new();
@@ -85,11 +86,23 @@ public partial class MainViewModel : ObservableObject
         _watchdog = new ConnectionWatchdog(_modbusClient);
         _watchdog.StatusChanged += Watchdog_StatusChanged;
         _watchdog.LogMessageReceived += msg => AddLog(msg);
+        _modbusClient.OnRawFrameLogged += OnRawFrameReceived;
 
         // 默认自动启动内置仿真器，实现开箱即用一键演示
         ToggleSimulatorCommand.Execute(null);
         LoadRecipesAsync();
         StartAcquisitionLoop();
+    }
+
+    private void OnRawFrameReceived(RawFrameLog log)
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            string dir = log.IsTx ? ">> [TX 发送]" : "<< [RX 接收]";
+            string item = $"{log.Timestamp:HH:mm:ss.fff} {dir} {log.HexString} ({log.Description})";
+            RawFrameLogs.Insert(0, item);
+            if (RawFrameLogs.Count > 60) RawFrameLogs.RemoveAt(RawFrameLogs.Count - 1);
+        });
     }
 
     public async void LoadRecipesAsync()
@@ -170,6 +183,14 @@ public partial class MainViewModel : ObservableObject
     private void OpenHistoryQuery()
     {
         var win = new Views.HistoryQueryWindow(_repository);
+        win.Owner = Application.Current?.MainWindow;
+        win.ShowDialog();
+    }
+
+    [RelayCommand]
+    private void OpenSpcAnalysis()
+    {
+        var win = new Views.SpcAnalysisWindow(_repository);
         win.Owner = Application.Current?.MainWindow;
         win.ShowDialog();
     }
