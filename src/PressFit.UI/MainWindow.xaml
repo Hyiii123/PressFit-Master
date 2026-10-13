@@ -14,9 +14,10 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="64" />  <!-- 顶部状态栏 -->
-            <RowDefinition Height="*" />   <!-- 主体操作与监控区 -->
-            <RowDefinition Height="Auto" /> <!-- 底部仿真与报文监控抽屉 -->
+            <RowDefinition Height="64" />   <!-- Row 0: 顶部状态栏 -->
+            <RowDefinition Height="Auto" /> <!-- Row 1: ISA-18.2 实时活动报警横幅 -->
+            <RowDefinition Height="*" />    <!-- Row 2: 主体操作与监控区 -->
+            <RowDefinition Height="Auto" /> <!-- Row 3: 底部仿真与报文监控抽屉 -->
         </Grid.RowDefinitions>
 
         <!-- 1. 顶部全局状态栏 -->
@@ -58,6 +59,22 @@
                 <!-- 右侧功能导航与权限控制 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- 核心业务导航按钮 -->
+                    <Button Content="🌐 通信配置" Command="{Binding OpenCommunicationConfigCommand}" 
+                            Background="#243346" Foreground="White" FontWeight="SemiBold"
+                            Padding="10,6" Margin="0,0,6,0" BorderThickness="0" Cursor="Hand" />
+
+                    <Button Command="{Binding OpenAlarmCenterCommand}" 
+                            Background="#243346" Foreground="White" FontWeight="SemiBold"
+                            Padding="10,6" Margin="0,0,6,0" BorderThickness="0" Cursor="Hand">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🚨 报警中心" VerticalAlignment="Center" />
+                            <Border Background="#D63031" CornerRadius="8" Padding="5,1" Margin="5,0,0,0"
+                                    Visibility="{Binding HasActiveAlarm, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding UnacknowledgedAlarmCount}" FontSize="10" FontWeight="Bold" Foreground="White" />
+                            </Border>
+                        </StackPanel>
+                    </Button>
+
                     <Button Content="⚙️ 配方标定" Command="{Binding OpenRecipeManagerCommand}" 
                             Background="#243346" Foreground="White" FontWeight="SemiBold"
                             Padding="10,6" Margin="0,0,6,0" BorderThickness="0" Cursor="Hand" />
@@ -92,8 +109,25 @@
             </Grid>
         </Border>
 
-        <!-- 2. 主体区 (三栏布局: 配方参数 / 核心曲线监控 / 生产统计与日志) -->
-        <Grid Grid.Row="1" Margin="15">
+        <!-- 2. ISA-18.2 活动报警浮动横幅 -->
+        <Border Grid.Row="1" Background="#781010" BorderBrush="#D63031" BorderThickness="0,0,0,1" Padding="18,7"
+                Visibility="{Binding HasActiveAlarm, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🚨 [现场报警警示]" FontWeight="Bold" Foreground="#FFA8A8" FontSize="13" Margin="0,0,10,0" />
+                    <TextBlock Text="{Binding ActiveAlarmBannerText}" FontWeight="Bold" Foreground="White" FontSize="13" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="已知晓确认 (Ack)" Command="{Binding AcknowledgeTopAlarmCommand}"
+                            Background="#00B894" Foreground="White" FontWeight="Bold" Padding="12,3" BorderThickness="0" Margin="0,0,10,0" Cursor="Hand" />
+                    <Button Content="查看全部报警" Command="{Binding OpenAlarmCenterCommand}"
+                            Background="#2D3748" Foreground="White" Padding="10,3" BorderThickness="0" Cursor="Hand" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 3. 主体区 (三栏布局: 配方参数 / 核心曲线监控 / 生产统计与日志) -->
+        <Grid Grid.Row="2" Margin="15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="310" /> <!-- 左侧工艺与工件控制 -->
                 <ColumnDefinition Width="*" />   <!-- 中央曲线与大屏监控 -->
@@ -310,8 +344,8 @@
             </Grid>
         </Grid>
 
-        <!-- 3. 底部抽屉: 仿真控制台与底层原始报文监视器 -->
-        <Expander Grid.Row="2" Background="#111720" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,1,0,0"
+        <!-- 4. 底部抽屉: 仿真控制台与底层原始报文监视器 -->
+        <Expander Grid.Row="3" Background="#111720" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,1,0,0"
                   Header="🛠️ 高保真虚拟从机、故障注入与底层 Modbus 原始帧抓包监视器 (Raw Frame &amp; Faults)" 
                   Foreground="{StaticResource AccentCyan}" FontWeight="Bold" IsExpanded="True">
             <Border Background="#17202C" Padding="15,10">

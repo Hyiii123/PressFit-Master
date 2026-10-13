@@ -1,0 +1,87 @@
+<Window x:Class="PressFit.UI.Views.CommunicationConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="通信网络参数配置与连通性测试" 
+        Height="480" Width="640"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgDark}"
+        Foreground="{StaticResource TextPrimary}"
+        ResizeMode="NoResize">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 标题 -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="🌐 工业以太网通信参数设置" FontSize="18" FontWeight="Bold" Foreground="White" />
+            <TextBlock Text="支持 Modbus TCP 现场 IP、高频轮询周期配置与物理连通性探针测试" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0" />
+        </StackPanel>
+
+        <!-- 表单 -->
+        <Border Grid.Row="1" Background="{StaticResource BgCard}" CornerRadius="8" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Padding="18">
+            <StackPanel>
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="130" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="从机 PLC IP 地址 (IPv4):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                        <TextBox x:Name="TxtIp" Height="34" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="通讯端口 (Port):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                        <TextBox x:Name="TxtPort" Height="34" />
+                    </StackPanel>
+                </Grid>
+
+                <UniformGrid Columns="2" Margin="0,0,0,12">
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="数采轮询周期 (ms - 20ms对应50Hz):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                        <TextBox x:Name="TxtPolling" Height="34" />
+                    </StackPanel>
+                    <StackPanel Margin="10,0,0,0">
+                        <TextBlock Text="通信超时阈值 (ms):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                        <TextBox x:Name="TxtTimeout" Height="34" />
+                    </StackPanel>
+                </UniformGrid>
+
+                <UniformGrid Columns="2" Margin="0,0,0,15">
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="看门狗心跳保活间隔 (ms):" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4" />
+                        <TextBox x:Name="TxtHeartbeat" Height="34" />
+                    </StackPanel>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <CheckBox x:Name="ChkReconnect" Content="开启指数退避自动重连看门狗" Foreground="White" Margin="0,15,0,0" />
+                    </StackPanel>
+                </UniformGrid>
+
+                <!-- 连通性测试区 -->
+                <Border Background="#121B24" CornerRadius="6" Padding="10" Margin="0,5,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="⚡ 连通性探针测试" Click="PingTest_Click" 
+                                Width="140" Height="32" Background="#243346" Foreground="{StaticResource AccentCyan}" 
+                                FontWeight="Bold" BorderThickness="0" Cursor="Hand" />
+                        <TextBlock Grid.Column="1" x:Name="TxtPingResult" Text="点击左侧按钮预检目标地址与端口通断..." 
+                                   VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{StaticResource TextSecondary}" FontSize="12" TextWrapping="Wrap" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- 底部保存按钮 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="💾 保存并应用参数" Click="SaveConfig_Click" Width="140" Height="36" 
+                    Background="{StaticResource StatusOk}" Foreground="White" FontWeight="Bold" BorderThickness="0" Margin="0,0,10,0" Cursor="Hand" />
+            <Button Content="取消" Click="Cancel_Click" Width="80" Height="36" 
+                    Background="#2D3748" Foreground="{StaticResource TextSecondary}" BorderThickness="0" Cursor="Hand" />
+        </StackPanel>
+    </Grid>
+</Window>

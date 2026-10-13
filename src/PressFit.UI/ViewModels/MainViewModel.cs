@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PressFit.Communication.Config;
 using PressFit.Communication.Modbus;
 using PressFit.Communication.Pipeline;
 using PressFit.Communication.StateMachine;
@@ -20,11 +21,11 @@ public partial class MainViewModel : ObservableObject
     private readonly IPressFitRepository _repository;
     private readonly IPressDataPipeline _pipeline;
     private readonly IVirtualSlaveService _simulator;
+    private readonly IAlarmManagerService _alarmService;
     private readonly ConnectionWatchdog _watchdog;
 
-    // 通信连接属性
-    [ObservableProperty] private string _serverIp = "127.0.0.1";
-    [ObservableProperty] private int _serverPort = 5020;
+    // 通信网络参数配置
+    [ObservableProperty] private CommunicationConfig _commConfig = new();
     [ObservableProperty] private bool _isConnected = false;
     [ObservableProperty] private string _connectionStatusText = "未连接 (离线)";
 
@@ -36,10 +37,16 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private double _peakForce = 0.0;
     [ObservableProperty] private double _cycleTimeMs = 0.0;
 
+    // 工业 ISA-18.2 实时报警横幅
+    [ObservableProperty] private bool _hasActiveAlarm = false;
+    [ObservableProperty] private string _activeAlarmBannerText = "当前无报警";
+    [ObservableProperty] private int _unacknowledgedAlarmCount = 0;
+
     // 工业多级权限与审计
     [ObservableProperty] private UserRole _currentUserRole = UserRole.Operator;
     [ObservableProperty] private string _currentUserRoleText = "产线操作员 (Operator)";
     [ObservableProperty] private bool _canEditRecipe = false;
+    [ObservableProperty] private bool _canConfigure = false;
 
     // 工艺配方与工件
     [ObservableProperty] private ObservableCollection<PressRecipe> _recipes = new();
@@ -76,22 +83,45 @@ public partial class MainViewModel : ObservableObject
         IModbusMasterService modbusClient,
         IPressFitRepository repository,
         IPressDataPipeline pipeline,
-        IVirtualSlaveService simulator)
+        IVirtualSlaveService simulator,
+        IAlarmManagerService alarmService)
     {
         _modbusClient = modbusClient;
         _repository = repository;
         _pipeline = pipeline;
         _simulator = simulator;
+        _alarmService = alarmService;
+
+        CommConfig = CommunicationConfigManager.LoadConfig();
 
         _watchdog = new ConnectionWatchdog(_modbusClient);
         _watchdog.StatusChanged += Watchdog_StatusChanged;
         _watchdog.LogMessageReceived += msg => AddLog(msg);
         _modbusClient.OnRawFrameLogged += OnRawFrameReceived;
+        _alarmService.OnAlarmsChanged += RefreshAlarmBanner;
 
         // 默认自动启动内置仿真器，实现开箱即用一键演示
         ToggleSimulatorCommand.Execute(null);
         LoadRecipesAsync();
         StartAcquisitionLoop();
+    }
+
+    private void RefreshAlarmBanner()
+    {
+        Application.Current?.Dispatcher.Invoke(() =>
+        {
+            var top = _alarmService.HighestPriorityActiveAlarm;
+            HasActiveAlarm = top != null;
+            UnacknowledgedAlarmCount = _alarmService.UnacknowledgedCount;
+            if (top != null)
+            {
+                ActiveAlarmBannerText = $"🚨 [{top.Level}] {top.AlarmCode} : {top.Description} (触发于 {top.OccurredAt:HH:mm:ss})";
+            }
+            else
+            {
+                ActiveAlarmBannerText = "系统运行正常，无活动报警";
+            }
+        });
     }
 
     private void OnRawFrameReceived(RawFrameLog log)
@@ -115,7 +145,7 @@ public partial class MainViewModel : ObservableObject
 
     private void Watchdog_StatusChanged(ConnectionStatus status)
     {
-        Application.Current?.Dispatcher.Invoke(() =>
+        Application.Current?.Dispatcher.Invoke(async () =>
         {
             IsConnected = status == ConnectionStatus.Connected;
             ConnectionStatusText = status switch
@@ -125,14 +155,23 @@ public partial class MainViewModel : ObservableObject
                 ConnectionStatus.Degraded => "通信降级 (重试中)",
                 _ => "未连接 (离线)"
             };
+
+            if (status == ConnectionStatus.Connected)
+            {
+                await _alarmService.ClearAlarmAsync("ALM-COMM-001");
+            }
+            else if (status == ConnectionStatus.Disconnected || status == ConnectionStatus.Degraded)
+            {
+                await _alarmService.RaiseAlarmAsync("ALM-COMM-001", "下位机以太网通信中断，自动看门狗正在执行退避重连", AlarmLevel.Warning);
+            }
         });
     }
 
     [RelayCommand]
     private void Connect()
     {
-        AddLog($"手动触发连接 -> {ServerIp}:{ServerPort}");
-        _watchdog.Start(ServerIp, ServerPort);
+        AddLog($"手动触发连接 -> {CommConfig.IpAddress}:{CommConfig.Port}");
+        _watchdog.Start(CommConfig.IpAddress, CommConfig.Port);
     }
 
     [RelayCommand]
@@ -160,7 +199,47 @@ public partial class MainViewModel : ObservableObject
                 _ => "产线操作员 (Operator)"
             };
             CanEditRecipe = CurrentUserRole != UserRole.Operator;
+            CanConfigure = CurrentUserRole == UserRole.Administrator || CurrentUserRole == UserRole.Engineer;
             AddLog($"[权限审计] 系统操作身份已切换为: {CurrentUserRoleText}");
+        }
+    }
+
+    [RelayCommand]
+    private void OpenCommunicationConfig()
+    {
+        if (!CanConfigure)
+        {
+            MessageBox.Show("当前处于【产线操作员】身份，无权修改现场底层网络通信参数！\n请点击右上角【切换身份】登录工程师或管理员账号。", "权限防呆提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var win = new Views.CommunicationConfigWindow(CommConfig);
+        win.Owner = Application.Current?.MainWindow;
+        if (win.ShowDialog() == true && win.HasApplied)
+        {
+            CommConfig = win.Config;
+            AddLog($"[通信配置] 通信参数已热更新 -> {CommConfig.IpAddress}:{CommConfig.Port} (轮询周期: {CommConfig.PollingIntervalMs}ms)");
+            // 自动重连
+            Connect();
+        }
+    }
+
+    [RelayCommand]
+    private void OpenAlarmCenter()
+    {
+        var win = new Views.AlarmCenterWindow(_alarmService, _repository);
+        win.Owner = Application.Current?.MainWindow;
+        win.ShowDialog();
+    }
+
+    [RelayCommand]
+    private async Task AcknowledgeTopAlarmAsync()
+    {
+        var top = _alarmService.HighestPriorityActiveAlarm;
+        if (top != null)
+        {
+            await _alarmService.AcknowledgeAlarmAsync(top.Id);
+            AddLog($"[报警确认] 已人工确认报警: {top.AlarmCode}");
         }
     }
 
@@ -230,6 +309,7 @@ public partial class MainViewModel : ObservableObject
             await _modbusClient.WriteSingleCoilAsync(1, ModbusAddressMap.COIL_CMD_STOP, true);
         }
         _simulator.TriggerEmergencyStop();
+        await _alarmService.RaiseAlarmAsync("ALM-E-STOP", "紧急停止按钮被操作工拍下！现场伺服动力已切断", AlarmLevel.Fatal);
     }
 
     [RelayCommand]
@@ -243,15 +323,15 @@ public partial class MainViewModel : ObservableObject
         }
         else
         {
-            _simulator.StartAsync(ServerPort);
+            _simulator.StartAsync(CommConfig.Port);
             IsSimulatorRunning = true;
-            AddLog($"内置虚拟仿真器已启动，监听端口: {ServerPort}");
+            AddLog($"内置虚拟仿真器已启动，监听端口: {CommConfig.Port}");
             Connect();
         }
     }
 
     [RelayCommand]
-    private void ApplyFaults()
+    private async Task ApplyFaultsAsync()
     {
         _simulator.InjectFault("Disconnect", FaultDisconnect);
         _simulator.InjectFault("Timeout", FaultTimeout);
@@ -259,12 +339,22 @@ public partial class MainViewModel : ObservableObject
         _simulator.InjectFault("ForceLow", FaultForceLow);
         _simulator.InjectFault("DispShort", FaultDispShort);
         _simulator.InjectFault("ServoAlarm", FaultServoAlarm);
+
+        if (FaultServoAlarm)
+        {
+            await _alarmService.RaiseAlarmAsync("ALM-SERVO-5001", "伺服驱动器过载报警：电流超过额定阈值 150%", AlarmLevel.Error);
+        }
+        else
+        {
+            await _alarmService.ClearAlarmAsync("ALM-SERVO-5001");
+        }
+
         AddLog("[故障注入] 故障开关配置已同步至仿真引擎");
     }
 
     private void StartAcquisitionLoop()
     {
-        // 1. 高频网络轮询任务 (50Hz)
+        // 1. 高频网络轮询任务 (依据配置动态调节，默认 50Hz)
         Task.Run(async () =>
         {
             bool wasRunning = false;
@@ -312,7 +402,8 @@ public partial class MainViewModel : ObservableObject
                     }
                     catch { }
                 }
-                await Task.Delay(20); // 50Hz 轮询间隔
+                int delay = Math.Max(10, CommConfig.PollingIntervalMs);
+                await Task.Delay(delay);
             }
         });
 
@@ -359,6 +450,7 @@ public partial class MainViewModel : ObservableObject
         if (!eval.IsPass)
         {
             AddLog($"[NG详情] {eval.EvaluationMessage}");
+            await _alarmService.RaiseAlarmAsync($"ALM-QC-NG-{eval.Status}", $"工件 {WorkpieceBarcode} 质检不合格: {eval.EvaluationMessage}", AlarmLevel.Warning);
         }
 
         // 异步落盘 SQLite (Dapper)

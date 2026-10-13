@@ -58,7 +58,22 @@ public static class DatabaseInitializer
         ";
         await connection.ExecuteAsync(createRecordSql);
 
-        // 3. 注入初始默认演示配方 (若为空)
+        // 3. 创建工业 ISA-18.2 报警审计台账表
+        string createAlarmSql = @"
+            CREATE TABLE IF NOT EXISTS alarms (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                AlarmCode TEXT NOT NULL,
+                Description TEXT NOT NULL,
+                Level INTEGER NOT NULL,
+                OccurredAt TEXT NOT NULL,
+                AcknowledgedAt TEXT,
+                ClearedAt TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_alarms_time ON alarms(OccurredAt);
+        ";
+        await connection.ExecuteAsync(createAlarmSql);
+
+        // 4. 注入初始默认演示配方 (若为空)
         int recipeCount = await connection.ExecuteScalarAsync<int>("SELECT COUNT(1) FROM recipes;");
         if (recipeCount == 0)
         {

@@ -4,6 +4,7 @@
              Startup="Application_Startup">
     <Application.Resources>
         <ResourceDictionary>
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
             <!-- 工业暗色/深灰高端科技色彩主题定义 -->
             <SolidColorBrush x:Key="BgDark" Color="#121820" />
             <SolidColorBrush x:Key="BgCard" Color="#1A222D" />
@@ -162,4 +163,5 @@
         </ResourceDictionary>
     </Application.Resources>
 </Application>
+
 

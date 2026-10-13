@@ -1,5 +1,6 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using PressFit.Communication.Alarm;
 using PressFit.Communication.Modbus;
 using PressFit.Communication.Pipeline;
 using PressFit.Core.Interfaces;
@@ -23,6 +24,9 @@ public partial class App : Application
 
         // 注册仓储与数据库
         services.AddSingleton<IPressFitRepository, PressFitRepository>();
+
+        // 注册 ISA-18.2 报警管理服务
+        services.AddSingleton<IAlarmManagerService, AlarmManagerService>();
 
         // 注册虚拟仿真从机
         services.AddSingleton<IVirtualSlaveService, VirtualModbusServer>();

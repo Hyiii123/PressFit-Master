@@ -1,0 +1,90 @@
+<Window x:Class="PressFit.UI.Views.AlarmCenterWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ISA-18.2 工业报警管理与审计控制中心" 
+        Height="680" Width="1020"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgDark}"
+        Foreground="{StaticResource TextPrimary}">
+    <Grid Margin="18">
+        <TabControl Background="Transparent" BorderThickness="0">
+            <!-- Tab 1: 实时活动报警 -->
+            <TabItem Header="🚨 活动实时报警 (Active)" Foreground="White" FontSize="14" FontWeight="Bold">
+                <Grid Margin="0,15,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="{StaticResource BgCard}" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="TxtActiveCount" Text="活动报警: 0 项 (未确认: 0 项)" FontSize="14" FontWeight="Bold" Foreground="{StaticResource StatusNg}" />
+                            </StackPanel>
+                            <Button Content="🔔 一键全部确认 (Acknowledge All)" Click="AckAll_Click" HorizontalAlignment="Right"
+                                    Height="32" Padding="12,0" Background="{StaticResource AccentBlue}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Background="{StaticResource BgCard}" CornerRadius="8" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Padding="10">
+                        <DataGrid x:Name="ActiveAlarmGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                                  Background="Transparent" RowBackground="#16202C" AlternatingRowBackground="#1A2533"
+                                  BorderThickness="0" Foreground="White" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#263445">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="报警代码" Binding="{Binding AlarmCode}" Width="140" />
+                                <DataGridTextColumn Header="等级" Binding="{Binding Level}" Width="90" />
+                                <DataGridTextColumn Header="报警描述" Binding="{Binding Description}" Width="*" />
+                                <DataGridTextColumn Header="触发时间" Binding="{Binding OccurredAt, StringFormat='{}{0:HH:mm:ss.fff}'}" Width="130" />
+                                <DataGridTextColumn Header="状态" Binding="{Binding StateText}" Width="160" />
+                                <DataGridTemplateColumn Header="操作" Width="90">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="确认" Click="AckSingle_Click" Tag="{Binding Id}"
+                                                    Background="{StaticResource StatusOk}" Foreground="White" Padding="6,2" BorderThickness="0" Cursor="Hand" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 2: 历史报警审计流水 -->
+            <TabItem Header="📋 历史报警审计台账 (History)" Foreground="White" FontSize="14" FontWeight="Bold">
+                <Grid Margin="0,15,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="{StaticResource BgCard}" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="查询日期:" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <DatePicker x:Name="DpStart" Width="130" Height="32" Margin="0,0,8,0" />
+                            <TextBlock Text="至" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <DatePicker x:Name="DpEnd" Width="130" Height="32" Margin="0,0,15,0" />
+                            <Button Content="🔍 检索历史报警" Click="QueryHistory_Click" Width="130" Height="32"
+                                    Background="{StaticResource AccentBlue}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1" Background="{StaticResource BgCard}" CornerRadius="8" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Padding="10">
+                        <DataGrid x:Name="HistoryAlarmGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                                  Background="Transparent" RowBackground="#16202C" AlternatingRowBackground="#1A2533"
+                                  BorderThickness="0" Foreground="White" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#263445">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="报警代码" Binding="{Binding AlarmCode}" Width="140" />
+                                <DataGridTextColumn Header="等级" Binding="{Binding Level}" Width="80" />
+                                <DataGridTextColumn Header="描述" Binding="{Binding Description}" Width="*" />
+                                <DataGridTextColumn Header="触发时间" Binding="{Binding OccurredAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="160" />
+                                <DataGridTextColumn Header="人工确认时间" Binding="{Binding AcknowledgedAt, StringFormat='{}{0:HH:mm:ss}'}" Width="110" />
+                                <DataGridTextColumn Header="恢复消除时间" Binding="{Binding ClearedAt, StringFormat='{}{0:HH:mm:ss}'}" Width="110" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
