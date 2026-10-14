@@ -4,7 +4,12 @@
              Startup="Application_Startup">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Languages/Strings.zh-CN.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
             <!-- 工业暗色/深灰高端科技色彩主题定义 -->
             <SolidColorBrush x:Key="BgDark" Color="#121820" />
             <SolidColorBrush x:Key="BgCard" Color="#1A222D" />
@@ -145,7 +150,7 @@
                                                 CornerRadius="4" 
                                                 Margin="0,3,0,0">
                                             <ScrollViewer Margin="2" SnapsToDevicePixels="True">
-                                                <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                                <StackPanel IsItemsHost="True" />
                                             </ScrollViewer>
                                         </Border>
                                     </Grid>
@@ -163,5 +168,3 @@
         </ResourceDictionary>
     </Application.Resources>
 </Application>
-
-

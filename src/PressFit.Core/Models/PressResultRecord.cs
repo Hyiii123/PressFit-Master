@@ -4,6 +4,7 @@ namespace PressFit.Core.Models;
 
 /// <summary>
 /// 压装单件生产履历归档记录
+/// 支持本地 SQLite 离线缓冲与断网断点补传 (Store-and-Forward)
 /// </summary>
 public class PressResultRecord
 {
@@ -17,4 +18,8 @@ public class PressResultRecord
     public string FailureReason { get; set; } = string.Empty; // NG 详细原因
     public string CurvePointsJson { get; set; } = string.Empty; // 采样曲线数据点压缩 JSON
     public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+    // 边缘断点续传同步标志
+    public bool IsSyncedToMes { get; set; } = false;   // 是否已同步至云端/MES
+    public DateTime? SyncedAt { get; set; }            // 同步上报时间戳
 }

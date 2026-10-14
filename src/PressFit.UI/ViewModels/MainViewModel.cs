@@ -7,6 +7,7 @@ using PressFit.Communication.Config;
 using PressFit.Communication.Modbus;
 using PressFit.Communication.Pipeline;
 using PressFit.Communication.StateMachine;
+using PressFit.Communication.StoreAndForward;
 using PressFit.Core.Algorithms;
 using PressFit.Core.Enums;
 using PressFit.Core.Interfaces;
@@ -23,6 +24,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IVirtualSlaveService _simulator;
     private readonly IAlarmManagerService _alarmService;
     private readonly ConnectionWatchdog _watchdog;
+    private readonly MesSyncWorker _mesSyncWorker;
 
     // 通信网络参数配置
     [ObservableProperty] private CommunicationConfig _commConfig = new();
@@ -48,6 +50,14 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _canEditRecipe = false;
     [ObservableProperty] private bool _canConfigure = false;
 
+    // 多语言国际化 (i18n)
+    [ObservableProperty] private string _currentLanguage = "zh-CN";
+    [ObservableProperty] private string _langToggleText = "🌐 EN";
+
+    // 边缘断点补传 (Store-and-Forward)
+    [ObservableProperty] private int _pendingSyncCount = 0;
+    [ObservableProperty] private string _syncStatusText = "云端同步: 实时在线";
+
     // 工艺配方与工件
     [ObservableProperty] private ObservableCollection<PressRecipe> _recipes = new();
     [ObservableProperty] private PressRecipe? _selectedRecipe;
@@ -60,6 +70,13 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private int _okCount = 0;
     [ObservableProperty] private int _ngCount = 0;
     [ObservableProperty] private double _yieldRate = 100.0;
+
+    // 精益生产 OEE 与经济产值指标
+    [ObservableProperty] private double _oeePercentage = 100.0;
+    [ObservableProperty] private double _totalOutputValue = 0.0;
+    [ObservableProperty] private double _totalScrapLoss = 0.0;
+    [ObservableProperty] private double _netEconomicValue = 0.0;
+    [ObservableProperty] private string _oeeGradeText = "世界级 (World Class)";
 
     // 仿真器与故障注入
     [ObservableProperty] private bool _isSimulatorRunning = false;
@@ -99,6 +116,18 @@ public partial class MainViewModel : ObservableObject
         _watchdog.LogMessageReceived += msg => AddLog(msg);
         _modbusClient.OnRawFrameLogged += OnRawFrameReceived;
         _alarmService.OnAlarmsChanged += RefreshAlarmBanner;
+
+        // 启动边缘离线断点续传工作引擎
+        _mesSyncWorker = new MesSyncWorker(_repository);
+        _mesSyncWorker.OnSyncProgressChanged += (pending, synced) =>
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                PendingSyncCount = pending;
+                SyncStatusText = pending > 0 ? $"云端同步: 离线暂存 {pending} 件补传中" : "云端同步: 实时在线已同步";
+            });
+        };
+        _mesSyncWorker.Start();
 
         // 默认自动启动内置仿真器，实现开箱即用一键演示
         ToggleSimulatorCommand.Execute(null);
@@ -158,19 +187,38 @@ public partial class MainViewModel : ObservableObject
 
             if (status == ConnectionStatus.Connected)
             {
+                _mesSyncWorker.IsOnline = true;
                 await _alarmService.ClearAlarmAsync("ALM-COMM-001");
             }
             else if (status == ConnectionStatus.Disconnected || status == ConnectionStatus.Degraded)
             {
+                _mesSyncWorker.IsOnline = false;
                 await _alarmService.RaiseAlarmAsync("ALM-COMM-001", "下位机以太网通信中断，自动看门狗正在执行退避重连", AlarmLevel.Warning);
             }
         });
     }
 
     [RelayCommand]
+    private void ToggleLanguage()
+    {
+        if (CurrentLanguage == "zh-CN")
+        {
+            CurrentLanguage = "en-US";
+            LangToggleText = "🌐 中文";
+        }
+        else
+        {
+            CurrentLanguage = "zh-CN";
+            LangToggleText = "🌐 EN";
+        }
+        App.SwitchLanguage(CurrentLanguage);
+        AddLog($"[系统语言] 全局语言包已切换为: {CurrentLanguage}");
+    }
+
+    [RelayCommand]
     private void Connect()
     {
-        AddLog($"手动触发连接 -> {CommConfig.IpAddress}:{CommConfig.Port}");
+        AddLog($"手动触发连接 -> {CommConfig.IpAddress}:{CommConfig.Port} [{CommConfig.Protocol}]");
         _watchdog.Start(CommConfig.IpAddress, CommConfig.Port);
     }
 
@@ -181,7 +229,7 @@ public partial class MainViewModel : ObservableObject
         await _modbusClient.DisconnectAsync();
         IsConnected = false;
         ConnectionStatusText = "已手动断开";
-        AddLog("已断开 Modbus 连接");
+        AddLog("已断开通信链路");
     }
 
     [RelayCommand]
@@ -218,8 +266,7 @@ public partial class MainViewModel : ObservableObject
         if (win.ShowDialog() == true && win.HasApplied)
         {
             CommConfig = win.Config;
-            AddLog($"[通信配置] 通信参数已热更新 -> {CommConfig.IpAddress}:{CommConfig.Port} (轮询周期: {CommConfig.PollingIntervalMs}ms)");
-            // 自动重连
+            AddLog($"[通信配置] 通信参数已热更新 -> {CommConfig.IpAddress}:{CommConfig.Port} [{CommConfig.Protocol}]");
             Connect();
         }
     }
@@ -354,7 +401,7 @@ public partial class MainViewModel : ObservableObject
 
     private void StartAcquisitionLoop()
     {
-        // 1. 高频网络轮询任务 (依据配置动态调节，默认 50Hz)
+        // 1. 高频网络轮询任务 (依据配置动态调节)
         Task.Run(async () =>
         {
             bool wasRunning = false;
@@ -443,10 +490,23 @@ public partial class MainViewModel : ObservableObject
         else NgCount++;
         YieldRate = TotalCount > 0 ? (double)OkCount / TotalCount * 100.0 : 100.0;
 
+        // 计算 OEE 综合设备效率与产值核算
+        double plannedSec = Math.Max(60, TotalCount * 25.0);
+        double opSec = plannedSec * 0.95;
+        var oeeRes = OeeCalculator.Calculate(
+            plannedSec, opSec, TotalCount, OkCount, 22.0,
+            SelectedRecipe.UnitPrice, SelectedRecipe.ScrapCost
+        );
+        OeePercentage = oeeRes.OeePercentage;
+        TotalOutputValue = oeeRes.TotalOutputValue;
+        TotalScrapLoss = oeeRes.TotalScrapLoss;
+        NetEconomicValue = oeeRes.NetEconomicValue;
+        OeeGradeText = oeeRes.OeeEvaluationGrade;
+
         QualityResultText = eval.IsPass ? "PASS (OK)" : $"NG: {eval.Status}";
         IsQualityOk = eval.IsPass;
 
-        AddLog($"[周期结束] 判定结果: {QualityResultText}, 峰值压力: {eval.PeakForce:F2}kN, 终点位移: {eval.FinalDisplacement:F2}mm");
+        AddLog($"[周期结束] 判定结果: {QualityResultText}, 峰值压力: {eval.PeakForce:F2}kN, 终点位移: {eval.FinalDisplacement:F2}mm | 当班OEE: {OeePercentage}% 累计产值: ¥{TotalOutputValue}");
         if (!eval.IsPass)
         {
             AddLog($"[NG详情] {eval.EvaluationMessage}");
@@ -464,7 +524,8 @@ public partial class MainViewModel : ObservableObject
             CycleDurationSec = CycleTimeMs / 1000.0,
             FailureReason = eval.EvaluationMessage,
             CurvePointsJson = JsonSerializer.Serialize(pointsCopy),
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.Now,
+            IsSyncedToMes = false
         };
 
         await _repository.SaveProductionRecordAsync(record);

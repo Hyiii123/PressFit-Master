@@ -44,4 +44,23 @@ public partial class App : Application
         var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
     }
+
+    /// <summary>
+    /// 全局动态切换语言包 (无缝毫秒级热切，无需重启主窗口)
+    /// </summary>
+    public static void SwitchLanguage(string cultureCode) // "zh-CN" 或 "en-US"
+    {
+        var dict = new ResourceDictionary
+        {
+            Source = new Uri($"Languages/Strings.{cultureCode}.xaml", UriKind.Relative)
+        };
+
+        var merged = Current.Resources.MergedDictionaries;
+        var existing = merged.FirstOrDefault(d => d.Source != null && d.Source.OriginalString.Contains("Strings."));
+        if (existing != null)
+        {
+            merged.Remove(existing);
+        }
+        merged.Add(dict);
+    }
 }

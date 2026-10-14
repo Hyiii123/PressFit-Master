@@ -8,8 +8,13 @@ namespace PressFit.Communication.Modbus;
 /// 纯原生异步高性能 Modbus TCP 主站通信客户端
 /// 具备完整的 MBAP 报文封装、双向流处理、超时控制与原始帧抓包监视
 /// </summary>
-public class ModbusTcpClientService : IModbusMasterService, IDisposable
+public class ModbusTcpClientService : IIndustrialPlcDriver, IDisposable
 {
+    public PressFit.Core.Enums.PlcProtocolType ProtocolType => PressFit.Core.Enums.PlcProtocolType.ModbusTcp;
+
+    public Task<short[]> ReadDbWordsAsync(int dbNumber, int startOffset, int count, CancellationToken ct = default) => ReadHoldingRegistersAsync((byte)1, (ushort)(startOffset / 2), (ushort)count, ct);
+
+    public Task WriteDbWordsAsync(int dbNumber, int startOffset, short[] values, CancellationToken ct = default) => WriteMultipleRegistersAsync((byte)1, (ushort)(startOffset / 2), values, ct);
     private TcpClient? _tcpClient;
     private NetworkStream? _stream;
     private ushort _transactionId;
@@ -343,3 +348,5 @@ public class ModbusTcpClientService : IModbusMasterService, IDisposable
         _lock.Dispose();
     }
 }
+
+

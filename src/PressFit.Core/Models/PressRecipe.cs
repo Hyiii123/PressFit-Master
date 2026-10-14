@@ -2,6 +2,7 @@ namespace PressFit.Core.Models;
 
 /// <summary>
 /// 压装产品工艺配方 (Recipe)
+/// 包含工艺物理参数与精益生产计件成本核算指标
 /// </summary>
 public class PressRecipe
 {
@@ -16,5 +17,9 @@ public class PressRecipe
     public double PressSpeed { get; set; } = 5.0;     // 压入速度 (mm/s)
     public double HoldingTimeSec { get; set; } = 1.0; // 保压时间 (s)
     public double EnvelopeMarginPercentage { get; set; } = 10.0; // 包络线公差窗口上下浮动比例 (%)
+
+    // 精益生产与 OEE 产值成本核算字段
+    public double UnitPrice { get; set; } = 2.50;  // 单件良品加工单价 (元)
+    public double ScrapCost { get; set; } = 12.00; // 次品报废扣罚成本 (元)
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }
